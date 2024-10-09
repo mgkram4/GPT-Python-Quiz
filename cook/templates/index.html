@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Assistant</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        #user-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #submit-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #submit-btn:hover {
+            background-color: #2980b9;
+        }
+        #response {
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        ul, ol {
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ask the Chef</h1>
+    <textarea id="user-input" rows="4" placeholder="Ask for a recipe or cooking advice..."></textarea>
+    <br>
+    <button id="submit-btn">Get Recipe</button>
+    <div id="response"></div>
+    
+    <script>
+        $(document).ready(function() {
+            $('#submit-btn').click(function() {
+                var userInput = $('#user-input').val();
+                $.ajax({
+                    url: '/get_response',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ user_input: userInput }),
+                    success: function(data) {
+                        var response = data.response;
+                        var formattedResponse = formatResponse(response);
+                        $('#response').html(formattedResponse);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        $('#response').text("Error: " + jqXHR.responseJSON.error);
+                    }
+                });
+            });
+
+            function formatResponse(response) {
+                var sections = response.split('\n\n');
+                var html = '';
+
+                sections.forEach(function(section) {
+                    if (section.startsWith('**')) {
+                        var title = section.split(':**')[0].replace('**', '');
+                        var content = section.split(':**')[1];
+                        html += '<div class="section">';
+                        html += '<h2>' + title + '</h2>';
+                        if (title === 'Ingredients' || title === 'Instructions' || title === 'Tips') {
+                            html += parseList(content);
+                        } else {
+                            html += '<p>' + content.trim() + '</p>';
+                        }
+                        html += '</div>';
+                    } else {
+                        html += '<p>' + section + '</p>';
+                    }
+                });
+
+                return html;
+            }
+
+            function parseList(content) {
+                var items = content.split('\n').filter(item => item.trim() !== '');
+                var html = items[0].startsWith('1.') ? '<ol>' : '<ul>';
+                items.forEach(function(item) {
+                    html += '<li>' + item.replace(/^\d+\.\s*|-\s*/, '').trim() + '</li>';
+                });
+                html += items[0].startsWith('1.') ? '</ol>' : '</ul>';
+                return html;
+            }
+        });
+    </script>
+</body>
+</html>

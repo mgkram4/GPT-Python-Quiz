@@ -1,0 +1,8 @@
+# Ignore the virtual environment folder
+path/to/venv/
+
+# Ignore the .env file
+.env
+
+# Ignore the requirements.txt file
+requirements.txt

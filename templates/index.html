@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #quiz-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%; /* Make buttons full width */
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        /* New style for selected answer */
+        .selected {
+            background-color: #45a049 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-container">
+        <h1>Python Quiz</h1>
+        <div id="question-container">
+            <p id="question"></p>
+            <div id="options"></div>
+        </div>
+        <button id="submit-answer" style="display: none;">Submit Answer</button>
+        <button id="next-question">Get Question</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Variable to store the current question data
+        let currentQuestion = null;
+
+        // Function to fetch a new question from the server
+        function getQuestion() {
+            axios.post('/get_question')
+                .then(function (response) {
+                    currentQuestion = response.data;
+                    displayQuestion(currentQuestion);
+                })
+                .catch(function (error) {
+                    console.error('Error:', error);
+                    document.getElementById('question').textContent = 'Error loading question. Please try again.';
+                });
+        }
+
+        // Function to display the question and its options
+        function displayQuestion(questionData) {
+            document.getElementById('question').textContent = questionData.question;
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            for (let [key, value] of Object.entries(questionData.options)) {
+                const button = document.createElement('button');
+                button.textContent = `${key}) ${value}`;
+                button.onclick = () => selectAnswer(key);
+                optionsContainer.appendChild(button);
+            }
+            document.getElementById('submit-answer').style.display = 'inline-block';
+            document.getElementById('next-question').style.display = 'none';
+            document.getElementById('result').textContent = '';
+        }
+
+        // Function to handle answer selection
+        function selectAnswer(key) {
+            const buttons = document.querySelectorAll('#options button');
+            buttons.forEach(button => {
+                button.classList.remove('selected');
+                if (button.textContent.startsWith(key)) {
+                    button.classList.add('selected');
+                }
+            });
+        }
+
+        // Function to submit the answer and show the result
+        function submitAnswer() {
+            const selectedButton = document.querySelector('#options button.selected');
+            if (!selectedButton) {
+                alert('Please select an answer.');
+                return;
+            }
+            const userAnswer = selectedButton.textContent[0];
+            if (userAnswer === currentQuestion.correct_answer) {
+                document.getElementById('result').textContent = 'Correct! ' + currentQuestion.explanation;
+            } else {
+                document.getElementById('result').textContent = `Incorrect. The correct answer is ${currentQuestion.correct_answer}. ${currentQuestion.explanation}`;
+            }
+            document.getElementById('submit-answer').style.display = 'none';
+            document.getElementById('next-question').style.display = 'inline-block';
+        }
+
+        // Event listeners for submit and next question buttons
+        document.getElementById('submit-answer').addEventListener('click', submitAnswer);
+        document.getElementById('next-question').addEventListener('click', getQuestion);
+
+        // Get the first question when the page loads
+        getQuestion();
+    </script>
+</body>
+</html>
